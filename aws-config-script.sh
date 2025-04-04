@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e  # Exit on any error
+set -e  # Exit on error
 
 PROFILE_NAME="blaqnificent-admin"
 
@@ -33,9 +33,6 @@ fi
 echo "🧹 Cleaning up..."
 rm -rf aws awscliv2.zip
 
-# Enable AWS CLI auto prompt
-export AWS_CLI_AUTO_PROMPT="on-partial"
-
 # Configure AWS SSO with named profile
 echo "🛠️  Setting up profile [$PROFILE_NAME]..."
 aws configure set sso_start_url https://d-91671e396c.awsapps.com/start --profile $PROFILE_NAME
@@ -52,8 +49,25 @@ aws configure set profile.default.sso_account_id 144772165212
 aws configure set profile.default.sso_role_name AdministratorAccess
 aws configure set region us-west-1
 
-# Start SSO login
-echo "🔐 Logging in with default profile ([$PROFILE_NAME])..."
+# Enable AWS CLI auto prompt permanently
+echo "✨ Making AWS_CLI_AUTO_PROMPT persistent..."
+SHELL_RC="$HOME/.bashrc"
+if [[ "$SHELL" == */zsh ]]; then
+    SHELL_RC="$HOME/.zshrc"
+fi
+
+if ! grep -q "AWS_CLI_AUTO_PROMPT" "$SHELL_RC"; then
+    echo 'export AWS_CLI_AUTO_PROMPT=on-partial' >> "$SHELL_RC"
+    echo "✅ Added AWS_CLI_AUTO_PROMPT to $SHELL_RC"
+else
+    echo "ℹ️  AWS_CLI_AUTO_PROMPT already set in $SHELL_RC"
+fi
+
+# Apply the change to the current session
+export AWS_CLI_AUTO_PROMPT=on-partial
+
+# Start login
+echo "🔐 Logging in with default profile..."
 aws sso login
 
-echo "🎉 AWS CLI is ready to use without --profile!"
+echo "🎉 AWS CLI is ready to go with SSO and auto-prompt!"
